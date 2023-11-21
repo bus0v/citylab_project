@@ -26,17 +26,11 @@ private:
   rclcpp::CallbackGroup::SharedPtr pub_callback_group;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laserSub_;
-  // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odomSub_;
   float direction_;
   bool frontBlocked;
   geometry_msgs::msg::Twist move_vector;
   rclcpp::TimerBase::SharedPtr timer_;
-  // void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg){
-  //   //RCLCPP_INFO(this->get_logger(), "I heard: '%f'",
-  //   msg->pose.pose.position.x); float current_angle; current_angle =
-  //   msg->pose.pose.orientation.z;
-  // }
-
+ 
   void laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     // RCLCPP_INFO(this->get_logger(), "Front laser %f", msg->ranges[360]);
     float max = 0.0;
@@ -85,17 +79,12 @@ public:
 
     rclcpp::SubscriptionOptions options_sub;
     options_sub.callback_group = sub_callback_group;
-    // rclcpp::PublisherOptions options_pub;
-    // options_pub.callback_group = pub_callback_group;
+    
     publisher_ =
         this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
     laserSub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "/scan", 10, std::bind(&Patrol::laser_callback, this, _1), options_sub);
-
-    // odomSub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-    // "/odom", 10,
-    //  std::bind(&Patrol::odom_callback,this,_1));
 
     timer_ = this->create_wall_timer(100ms, std::bind(&Patrol::move, this),
                                      pub_callback_group);
@@ -104,7 +93,7 @@ public:
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  // put subscriber to odometry here
+  
   std::shared_ptr<Patrol> patrol_node = std::make_shared<Patrol>();
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(patrol_node);
