@@ -50,7 +50,7 @@ private:
     }
     requst->direction = result;
 
-  };
+  }};
 
   int main(int argc, char *argv[]) {
     rclcpp::init(argc, argv);
