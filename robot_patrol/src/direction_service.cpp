@@ -1,13 +1,14 @@
-#include "robot_patrol/srv/GetDirection.hpp"
-#include "geometry_msgs/msg/detail/twist__struct.hpp"
+
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/executors.hpp"
 #include "rclcpp/publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "direction_srv/srv/get_direction.hpp"
 #include "sensor_msgs/msg/detail/laser_scan__struct.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include <unistd.h>
-using GetDirection = robot_patrol::srv::direction_service;
+
+using GetDirection = direction_srv::srv::GetDirection;
 using std::placeholders::_1;
 using std::placeholders::_2;
 class DirectionService : public rclcpp::Node {

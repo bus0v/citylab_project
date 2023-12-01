@@ -1,7 +1,8 @@
+#include "direction_srv/srv/detail/get_direction__builder.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/timer.hpp"
 #include "std_srvs/srv/empty.hpp"
-#include "robot_patrol/srv/GetDirection.hpp"
+#include "direction_srv/srv/getdirection.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <future>
@@ -11,7 +12,7 @@ using namespace std::chrono_literals;
 
 class ServiceClient : public rclcpp::Node {
 private:
-  rclcpp::Client<robot_patrol::srv::GetDirection>::SharedPtr client_;
+  rclcpp::Client<direction_srv::srv::GetDirection>::SharedPtr client_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laserSub_;
 
@@ -39,7 +40,7 @@ private:
 
 public:
   ServiceClient() : Node("service_client") {
-    client_ = this->create_client<robot_patrol::srv::GetDirection>("moving");
+    client_ = this->create_client<robot_patrol::srv::GetDirection>("/direction_service");
     
   }
 
