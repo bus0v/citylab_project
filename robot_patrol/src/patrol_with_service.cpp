@@ -20,6 +20,7 @@
 #include <memory>
 using namespace std::chrono_literals;
 using std::placeholders::_1;
+
 class Patrol : public rclcpp::Node {
 private:
   rclcpp::CallbackGroup::SharedPtr sub_callback_group;
@@ -55,7 +56,7 @@ private:
         rclcpp::FutureReturnCode::SUCCESS) {
       auto result = result_future.get();
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "The robot is moving");
-      move(result)
+      this->move(result);
     } else {
       RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
                    "Failed to call service /moving");

@@ -36,10 +36,10 @@ if(BUILD_TESTING)
 endif()
 
 add_executable(patrol_node src/patrol.cpp)
-ament_target_dependencies(patrol_node rclcpp  geometry_msgs sensor_msgs)
+ament_target_dependencies(patrol_node rclcpp  geometry_msgs sensor_msgs direction_srv)
 
 add_executable(direction_service_node src/direction_service.cpp)
-ament_target_dependencies(direction_service_node rclcpp geometry_msgs sensor_msgs)
+ament_target_dependencies(direction_service_node rclcpp geometry_msgs sensor_msgs direction_srv)
 
 #add_executable(test_node src/test_service.cpp)
 #ament_target_dependencies(test_node rclcpp geometry_msgs sensor_msgs)
