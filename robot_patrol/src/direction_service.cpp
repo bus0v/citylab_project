@@ -1,10 +1,8 @@
-
 #include "direction_srv/srv/get_direction.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/executors.hpp"
 #include "rclcpp/publisher.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/detail/laser_scan__struct.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include <string>
 #include <unistd.h>
