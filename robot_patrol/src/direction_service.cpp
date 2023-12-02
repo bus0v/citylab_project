@@ -32,23 +32,29 @@ private:
                      const std::shared_ptr<GetDirection::Response> response) {
     // Use the data received in the request part of the message to make the
     // robot GetDirection:
-
+    RCLCPP_INFO(this->get_logger(), "Processing Request");
     string result = "front";
     for (int i = 180; i < 300; i++) {
-      total_dist_sec_right = total_dist_sec_right + request->laser_data.ranges[i];
+      total_dist_sec_right =
+          total_dist_sec_right + request->laser_data.ranges[i];
     }
-    for (int i = 300; i < 480; i++) {
-      total_dist_sec_front = total_dist_sec_front + request->laser_data.ranges[i];
+    for (int j = 300; j < 420; j++) {
+      total_dist_sec_front =
+          total_dist_sec_front + request->laser_data.ranges[j];
     }
-    for (int i = 480; i < 540; i++) {
-      total_dist_sec_left = total_dist_sec_left + request->laser_data.ranges[i];
+    for (int k = 420; k < 540; k++) {
+      total_dist_sec_left = total_dist_sec_left + request->laser_data.ranges[k];
     }
+    RCLCPP_INFO(this->get_logger(), "Right is %f", total_dist_sec_right);
+    RCLCPP_INFO(this->get_logger(), "Front is %f", total_dist_sec_front);
+    RCLCPP_INFO(this->get_logger(), "Left is %f", total_dist_sec_left);
     if (total_dist_sec_front < total_dist_sec_left) {
       result = "left";
     }
-    if (total_dist_sec_front < total_dist_sec_right) {
+    if (total_dist_sec_front < total_dist_sec_right && total_dist_sec_left < total_dist_sec_right) {
       result = "right";
     }
+    RCLCPP_INFO(this->get_logger(), "Result is %s", result.c_str());
     response->direction = result;
   }
 };
