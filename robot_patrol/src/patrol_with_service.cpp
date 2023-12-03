@@ -1,3 +1,4 @@
+#include "direction_srv/srv/get_direction.hpp"
 #include "geometry_msgs/msg/detail/twist__struct.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/detail/odometry__struct.hpp"
@@ -14,12 +15,12 @@
 #include "rclcpp/utilities.hpp"
 #include "sensor_msgs/msg/detail/laser_scan__struct.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-
 #include <chrono>
 #include <cmath>
 #include <memory>
 using namespace std::chrono_literals;
 using std::placeholders::_1;
+using namespace std;
 
 class Patrol : public rclcpp::Node {
 private:
@@ -27,43 +28,26 @@ private:
   rclcpp::CallbackGroup::SharedPtr pub_callback_group;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laserSub_;
-  float direction_;
-
+  string result;
+  sensor_msgs::msg::LaserScan last_laser_;
   geometry_msgs::msg::Twist move_vector;
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr client =
-      node->create_client<std_srvs::srv::Empty>("/direction_service");
+  rclcpp::Client<direction_srv::srv::GetDirection>::SharedPtr client_;
 
+  bool service_done_ = false;
   void laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     // RCLCPP_INFO(this->get_logger(), "Front laser %f", msg->ranges[360]);
-    float max = 0.0;
-    int max_pos;
-    auto request = msg;
-
-    while (!client->wait_for_service(1s)) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                     "Interrupted while waiting for the service. Exiting.");
-        return 0;
-      }
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
-                  "service not available, waiting again...");
-    }
-
-    auto result_future = client->async_send_request(request);
-    // Wait for the result.
-    if (rclcpp::spin_until_future_complete(node, result_future) ==
-        rclcpp::FutureReturnCode::SUCCESS) {
-      auto result = result_future.get();
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "The robot is moving");
-      this->move(result);
-    } else {
-      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"),
-                   "Failed to call service /moving");
-    }
+    last_laser_ = *msg;
   }
 
-  void move(string result) {
+  void move() {
+    auto request =
+        std::make_shared<direction_srv::srv::GetDirection::Request>();
+    request->laser_data = last_laser_;
+    auto result_future = client_->async_send_request(
+        request,
+        std::bind(&Patrol::response_callback, this, std::placeholders::_1));
+
     if (result == "front") {
       move_vector.linear.x = 0.1;
       move_vector.angular.z = 0.0;
@@ -79,7 +63,21 @@ private:
       move_vector.angular.z = -0.5;
       RCLCPP_INFO(this->get_logger(), "moving right");
     }
+    RCLCPP_INFO(this->get_logger(), "publishing move_vector");
     publisher_->publish(move_vector);
+  }
+
+  void response_callback(
+      rclcpp::Client<direction_srv::srv::GetDirection>::SharedFuture future) {
+    auto status = future.wait_for(1s);
+    if (status == std::future_status::ready) {
+      RCLCPP_INFO(this->get_logger(), "Result: success");
+      result = future.get()->direction;
+      RCLCPP_INFO(this->get_logger(), result);
+      service_done_ = true;
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Service In-Progress...");
+    }
   }
 
 public:
@@ -88,7 +86,8 @@ public:
         this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
     sub_callback_group =
         this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-
+    client_ = this->create_client<direction_srv::srv::GetDirection>(
+        "/direction_service");
     rclcpp::SubscriptionOptions options_sub;
     options_sub.callback_group = sub_callback_group;
 

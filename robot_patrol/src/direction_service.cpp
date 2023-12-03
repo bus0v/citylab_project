@@ -31,7 +31,10 @@ private:
   void turn_callback(const std::shared_ptr<GetDirection::Request> request,
                      const std::shared_ptr<GetDirection::Response> response) {
     // Use the data received in the request part of the message to make the
-    // robot GetDirection:
+    total_dist_sec_right = 0;
+    total_dist_sec_front = 0;
+    total_dist_sec_left = 0;
+
     RCLCPP_INFO(this->get_logger(), "Processing Request");
     string result = "front";
     for (int i = 180; i < 300; i++) {
@@ -45,13 +48,13 @@ private:
     for (int k = 420; k < 540; k++) {
       total_dist_sec_left = total_dist_sec_left + request->laser_data.ranges[k];
     }
-    RCLCPP_INFO(this->get_logger(), "Right is %f", total_dist_sec_right);
-    RCLCPP_INFO(this->get_logger(), "Front is %f", total_dist_sec_front);
-    RCLCPP_INFO(this->get_logger(), "Left is %f", total_dist_sec_left);
-    if (total_dist_sec_front < total_dist_sec_left) {
+    RCLCPP_INFO(this->get_logger(), "Front total %f", total_dist_sec_front);
+    RCLCPP_INFO(this->get_logger(), "Left total %f", total_dist_sec_left);
+    RCLCPP_INFO(this->get_logger(), "Right total %f", total_dist_sec_right);
+    if (total_dist_sec_front < total_dist_sec_left && total_dist_sec_front < 100.0) {
       result = "left";
     }
-    if (total_dist_sec_front < total_dist_sec_right && total_dist_sec_left < total_dist_sec_right) {
+    if (total_dist_sec_front < total_dist_sec_right && total_dist_sec_left < total_dist_sec_right && total_dist_sec_front < 100.0) {
       result = "right";
     }
     RCLCPP_INFO(this->get_logger(), "Result is %s", result.c_str());
@@ -62,6 +65,6 @@ private:
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<DirectionService>());
-  rclcpp::shutdown();
+  //rclcpp::shutdown();
   return 0;
 }
