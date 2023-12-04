@@ -23,6 +23,8 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(direction_srv REQUIRED)
+find_package(gotopose_act REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -46,6 +48,9 @@ ament_target_dependencies(test_node rclcpp geometry_msgs sensor_msgs direction_s
 
 add_executable(patrol_service_node src/patrol_with_service.cpp)
 ament_target_dependencies(patrol_service_node rclcpp geometry_msgs sensor_msgs direction_srv)
+
+add_executable(action_node src/go_to_pose_action.cpp)
+ament_target_dependencies(action_node rclcpp geometry_msgs sensor_msgs nav_msgs gotopose_act)
 
 install(TARGETS
 	patrol_node
