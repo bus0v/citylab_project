@@ -33,38 +33,44 @@ private:
   geometry_msgs::msg::Twist move_vector;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Client<direction_srv::srv::GetDirection>::SharedPtr client_;
-
+  bool laser_received = false;
   bool service_done_ = false;
   void laser_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     // RCLCPP_INFO(this->get_logger(), "Front laser %f", msg->ranges[360]);
     last_laser_ = *msg;
+    laser_received = true;
   }
 
   void move() {
-    auto request =
-        std::make_shared<direction_srv::srv::GetDirection::Request>();
-    request->laser_data = last_laser_;
-    auto result_future = client_->async_send_request(
-        request,
-        std::bind(&Patrol::response_callback, this, std::placeholders::_1));
+    if (laser_received) {
+      auto request =
+          std::make_shared<direction_srv::srv::GetDirection::Request>();
+      request->laser_data = last_laser_;
+    
+      auto result_future = client_->async_send_request(
+          request,
+          std::bind(&Patrol::response_callback, this, std::placeholders::_1));
 
-    if (result == "front") {
-      move_vector.linear.x = 0.1;
-      move_vector.angular.z = 0.0;
-      RCLCPP_INFO(this->get_logger(), "moving forward");
+      if (result == "front") {
+        move_vector.linear.x = 0.1;
+        move_vector.angular.z = 0.0;
+        RCLCPP_INFO(this->get_logger(), "moving forward");
+      }
+      if (result == "left") {
+        move_vector.linear.x = 0.1;
+        move_vector.angular.z = 0.5;
+        RCLCPP_INFO(this->get_logger(), "moving left");
+      }
+      if (result == "right") {
+        move_vector.linear.x = 0.1;
+        move_vector.angular.z = -0.5;
+        RCLCPP_INFO(this->get_logger(), "moving right");
+      }
+      RCLCPP_INFO(this->get_logger(), "publishing move_vector");
+      publisher_->publish(move_vector);
+    } else {
+      RCLCPP_INFO(this->get_logger(), "waiting for laser");
     }
-    if (result == "left") {
-      move_vector.linear.x = 0.1;
-      move_vector.angular.z = 0.5;
-      RCLCPP_INFO(this->get_logger(), "moving left");
-    }
-    if (result == "right") {
-      move_vector.linear.x = 0.1;
-      move_vector.angular.z = -0.5;
-      RCLCPP_INFO(this->get_logger(), "moving right");
-    }
-    RCLCPP_INFO(this->get_logger(), "publishing move_vector");
-    publisher_->publish(move_vector);
   }
 
   void response_callback(
