@@ -19,6 +19,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -38,6 +39,12 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/GoToPose.action"
+  DEPENDENCIES geometry_msgs builtin_interfaces
+)
+
+
 add_executable(patrol_node src/patrol.cpp)
 ament_target_dependencies(patrol_node rclcpp  geometry_msgs sensor_msgs direction_srv)
 
@@ -51,7 +58,10 @@ add_executable(patrol_service_node src/patrol_with_service.cpp)
 ament_target_dependencies(patrol_service_node rclcpp geometry_msgs sensor_msgs direction_srv)
 
 add_executable(action_node src/go_to_pose_action.cpp)
-ament_target_dependencies(action_node rclcpp rclcpp_action geometry_msgs sensor_msgs nav_msgs gotopose_act)
+ament_target_dependencies(action_node rclcpp rclcpp_action geometry_msgs sensor_msgs nav_msgs action_msgs)
+
+rosidl_target_interfaces(action_node
+      ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 install(TARGETS
 	patrol_node
@@ -66,5 +76,6 @@ install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
   )
+
 
 ament_package()

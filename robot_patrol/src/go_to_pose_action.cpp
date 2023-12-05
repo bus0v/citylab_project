@@ -8,12 +8,12 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 
 #include "geometry_msgs/msg/twist.hpp"
-#include "gotopose_act/action/go_to_pose.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "robot_patrol/action/go_to_pose.hpp"
 
 class GoToPose : public rclcpp::Node {
 public:
-  using GoTo = gotopose_act::action::GoToPose;
+  using GoTo = robot_patrol::action::GoToPose;
   using GoalHandleGoTo = rclcpp_action::ServerGoalHandle<GoTo>;
   explicit GoToPose(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
       : Node("my_action_server", options) {
@@ -94,17 +94,24 @@ private:
       float dx, dy, dtheta, h;
       dx = goal->goal_pos.x - current_pos_.x;
       dy = goal->goal_pos.y - current_pos_.y;
-      dtheta = goal->goal_pos.theta - current_pos_.theta;
+      dtheta = goal->goal_pos.theta * 0.0174533 - current_pos_.theta;
       h = sqrt(pow(dx,2) + pow(dy,2));
       float t = h / 0.2;
       RCLCPP_INFO(this->get_logger(), "h = %f",h);
-      RCLCPP_INFO(this->get_logger(), "theta_speed = %f",dtheta/t);
+      float angle = acos(dx/h);
+      RCLCPP_INFO(this->get_logger(), "angle to turn = %f", angle);
+      RCLCPP_INFO(this->get_logger(), "theta_speed = %f", angle/t);
+      
+      // Move robot forward and send feedback
+      move.linear.x = 0.2;
+      move.angular.z = angle/t;
+      if (dx < 0.1 && dy < 0.1) {
+        move.linear.x = 0.0;
+        move.angular.z = dtheta/2;
+      }
       if (dx < 0.1 && dy < 0.1 && dtheta < 0.1) {
         result->status = true;
       }
-      // Move robot forward and send feedback
-      move.linear.x = 0.2;
-      move.angular.z = dtheta/t;
       publisher_->publish(move);
       feedback->current_pos = this->current_pos_;
       goal_handle->publish_feedback(feedback);
@@ -133,7 +140,6 @@ int main(int argc, char **argv) {
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(action_server);
   executor.spin();
-
   rclcpp::shutdown();
   return 0;
 }
