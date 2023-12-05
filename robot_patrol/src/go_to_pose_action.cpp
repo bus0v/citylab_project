@@ -1,16 +1,15 @@
-#include "geometry_msgs/msg/detail/pose2_d__struct.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include "gotopose_act/action/detail/go_to_pose__struct.hpp"
-#include "gotopose_act/action/go_to_pose.hpp"
-#include "nav_msgs/msg/detail/odometry__struct.hpp"
-#include "rclcpp/create_subscription.hpp"
-#include "rclcpp/exceptions/exceptions.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "rclcpp_action/rclcpp_action.hpp"
+#include <cmath>
 #include <functional>
 #include <math.h>
 #include <memory>
 #include <thread>
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+
+#include "geometry_msgs/msg/twist.hpp"
+#include "gotopose_act/action/go_to_pose.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 class GoToPose : public rclcpp::Node {
 public:
@@ -74,15 +73,13 @@ private:
     t3 = +2.0 * (w * z + x * y);
     t4 = +1.0 - 2.0 * (y * y + z * z);
     current_pos_.set__theta(atan2(t3, t4));
-    RCLCPP_INFO(this->get_logger(), "Current yaw is %f", atan2(t3, t4));
+    //RCLCPP_INFO(this->get_logger(), "Current yaw is %f", atan2(t3, t4));
   }
 
   void execute(const std::shared_ptr<GoalHandleGoTo> goal_handle) {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<GoTo::Feedback>();
-    auto &message = feedback->current_pos;
-    message = this->current_pos_;
     auto result = std::make_shared<GoTo::Result>();
     auto move = geometry_msgs::msg::Twist();
     rclcpp::Rate loop_rate(1);
@@ -94,16 +91,20 @@ private:
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
       }
-      float dx, dy, dtheta;
+      float dx, dy, dtheta, h;
       dx = goal->goal_pos.x - current_pos_.x;
       dy = goal->goal_pos.y - current_pos_.y;
       dtheta = goal->goal_pos.theta - current_pos_.theta;
+      h = sqrt(pow(dx,2) + pow(dy,2));
+      float t = h / 0.2;
+      RCLCPP_INFO(this->get_logger(), "h = %f",h);
+      RCLCPP_INFO(this->get_logger(), "theta_speed = %f",dtheta/t);
       if (dx < 0.1 && dy < 0.1 && dtheta < 0.1) {
         result->status = true;
       }
       // Move robot forward and send feedback
       move.linear.x = 0.2;
-      move.angular.z = dtheta;
+      move.angular.z = dtheta/t;
       publisher_->publish(move);
       feedback->current_pos = this->current_pos_;
       goal_handle->publish_feedback(feedback);

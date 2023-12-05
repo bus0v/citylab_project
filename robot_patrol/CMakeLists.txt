@@ -18,6 +18,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -50,13 +51,14 @@ add_executable(patrol_service_node src/patrol_with_service.cpp)
 ament_target_dependencies(patrol_service_node rclcpp geometry_msgs sensor_msgs direction_srv)
 
 add_executable(action_node src/go_to_pose_action.cpp)
-ament_target_dependencies(action_node rclcpp geometry_msgs sensor_msgs nav_msgs gotopose_act)
+ament_target_dependencies(action_node rclcpp rclcpp_action geometry_msgs sensor_msgs nav_msgs gotopose_act)
 
 install(TARGETS
 	patrol_node
 	test_node
 	direction_service_node
 	patrol_service_node
+	action_node
 	DESTINATION lib/${PROJECT_NAME}/
 	)
 
