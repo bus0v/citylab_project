@@ -73,7 +73,7 @@ private:
     t3 = +2.0 * (w * z + x * y);
     t4 = +1.0 - 2.0 * (y * y + z * z);
     current_pos_.set__theta(atan2(t3, t4));
-    //RCLCPP_INFO(this->get_logger(), "Current yaw is %f", atan2(t3, t4));
+    // RCLCPP_INFO(this->get_logger(), "Current yaw is %f", atan2(t3, t4));
   }
 
   void execute(const std::shared_ptr<GoalHandleGoTo> goal_handle) {
@@ -82,41 +82,70 @@ private:
     auto feedback = std::make_shared<GoTo::Feedback>();
     auto result = std::make_shared<GoTo::Result>();
     auto move = geometry_msgs::msg::Twist();
+    
     rclcpp::Rate loop_rate(1);
-
+    float dx, dy, dtheta, h;
+    dx = goal->goal_pos.x - current_pos_.x;
+    dy = goal->goal_pos.y - current_pos_.y;
+    dtheta = goal->goal_pos.theta * 0.0174533 - current_pos_.theta;
+    h = sqrt(pow(dx, 2) + pow(dy, 2));
+    float angle = acos(dx / h);
+    bool turned = false;
+    RCLCPP_INFO(this->get_logger(), "dx = %f", dx);
+    RCLCPP_INFO(this->get_logger(), "dy = %f", dy);
+    RCLCPP_INFO(this->get_logger(), "h = %f", dx);
+    RCLCPP_INFO(this->get_logger(), "angle = %f", angle * 57.2958);
+    float angle_diff;
     while (!result->status && rclcpp::ok()) {
+
       // Check if there is a cancel request
       if (goal_handle->is_canceling()) {
         goal_handle->canceled(result);
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
       }
-      float dx, dy, dtheta, h;
-      dx = goal->goal_pos.x - current_pos_.x;
-      dy = goal->goal_pos.y - current_pos_.y;
+
+      dx = abs(goal->goal_pos.x - current_pos_.x);
+      dy = abs(goal->goal_pos.y - current_pos_.y);
+      
       dtheta = goal->goal_pos.theta * 0.0174533 - current_pos_.theta;
-      h = sqrt(pow(dx,2) + pow(dy,2));
-      float t = h / 0.2;
-      RCLCPP_INFO(this->get_logger(), "h = %f",h);
-      float angle = acos(dx/h);
-      RCLCPP_INFO(this->get_logger(), "angle to turn = %f", angle);
-      RCLCPP_INFO(this->get_logger(), "theta_speed = %f", angle/t);
+     
+      if (!turned){
+       RCLCPP_INFO(this->get_logger(), "angle to turn = %f", angle);
+       RCLCPP_INFO(this->get_logger(), "current angle = %f", current_pos_.theta);
+        angle_diff = (angle - current_pos_.theta);
+        RCLCPP_INFO(this->get_logger(), "angle diff= %f", abs(angle_diff));
+        float turn_speed = 0.3;
+        if (angle_diff < 0) {turn_speed = -0.3;}
+        move.angular.z = angle_diff/2;
+        move.linear.x = 0.0;
+        if (abs(angle_diff) < 0.012){turned = true;}
+      }
+      // turn the robot until the differce between the angle heading and the curent theta is 0.01
+      //mark the turn as completed
       
       // Move robot forward and send feedback
-      move.linear.x = 0.2;
-      move.angular.z = angle/t;
+      if (turned){
+      RCLCPP_INFO(this->get_logger(), "dx = %f", dx);
+      RCLCPP_INFO(this->get_logger(), "dy = %f", dy);
+        move.linear.x = 0.1;
+        move.angular.z = 0.0;
+      }
+      
       if (dx < 0.1 && dy < 0.1) {
         move.linear.x = 0.0;
-        move.angular.z = dtheta/2;
+        move.angular.z = dtheta / 2;
+        RCLCPP_INFO(this->get_logger(), "dtheta = %f", dtheta);
       }
-      if (dx < 0.1 && dy < 0.1 && dtheta < 0.1) {
+
+      if (dx < 0.1 && dy < 0.1 && abs(dtheta) < 0.1) {
         result->status = true;
       }
+
       publisher_->publish(move);
       feedback->current_pos = this->current_pos_;
       goal_handle->publish_feedback(feedback);
       RCLCPP_INFO(this->get_logger(), "Publish feedback");
-
       loop_rate.sleep();
     }
 
