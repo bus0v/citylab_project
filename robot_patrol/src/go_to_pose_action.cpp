@@ -84,12 +84,21 @@ private:
     auto move = geometry_msgs::msg::Twist();
     
     rclcpp::Rate loop_rate(1);
-    float dx, dy, dtheta, h;
+    float dx, dy, dtheta;
     dx = goal->goal_pos.x - current_pos_.x;
     dy = goal->goal_pos.y - current_pos_.y;
     dtheta = goal->goal_pos.theta * 0.0174533 - current_pos_.theta;
-    h = sqrt(pow(dx, 2) + pow(dy, 2));
-    float angle = acos(dx / h);
+    //h = sqrt(pow(dx, 2) + pow(dy, 2));
+    float angle = atan(dy / dx);
+    if (dx < 0){
+     if (dy < 0){
+       angle = -3.14159 + angle;
+     }
+     else{
+      angle = 3.14159 - angle;
+     }
+    }
+
     bool turned = false;
     RCLCPP_INFO(this->get_logger(), "dx = %f", dx);
     RCLCPP_INFO(this->get_logger(), "dy = %f", dy);
