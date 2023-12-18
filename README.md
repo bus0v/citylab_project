@@ -10,9 +10,11 @@ The repo consists of
 
 The action server takes in a desired global pose of the robot and drives to that destination.
 
-The patrol service drives the robot around and avoids obstacles
+The **patrol.cpp** script drives the robot around and avoids obstacles
 
-The scan service determines which direction has the most open space.
+The direction service determines which direction has the most open space.
 
-The patrol with scan service drives the robot around while calling the scan service constantly.
+The patrol with service script drives the robot around while calling the direction service constantly.
+
+The are launch files included for each script for convenience.
 
